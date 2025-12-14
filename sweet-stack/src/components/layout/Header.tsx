@@ -17,9 +17,23 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b-2 border-primary/20 bg-gradient-to-r from-background via-[hsl(var(--cream))] to-background shadow-md">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity group">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary via-[hsl(var(--warm-orange))] to-[hsl(var(--deep-red))] shadow-lg group-hover:scale-110 transition-transform overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-gold/30 to-transparent"></div>
-            <div className="relative z-10 w-8 h-8 rounded-full bg-gradient-to-br from-white/90 to-gold/50 shadow-inner"></div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary via-[hsl(var(--warm-orange))] to-[hsl(var(--deep-red))] shadow-lg group-hover:scale-110 transition-transform overflow-hidden relative p-1">
+            <img 
+              src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTdflsIlCSm9rKYa1WY7-nm_XKb5ZNaCyj_djUruwAtMnmSZ19VsoLHAqquu2y_fCbvX8bBjOCH7TwIl9ZioDkZ4lcOYqnPqzHiqE6lq-exZw&s=10" 
+              alt="Laddu Icon" 
+              className="w-full h-full object-cover rounded-full"
+              onError={(e) => {
+                // Fallback: hide image and show emoji
+                const target = e.currentTarget;
+                target.style.display = 'none';
+                if (!target.parentElement?.querySelector('.fallback-icon')) {
+                  const fallback = document.createElement('div');
+                  fallback.className = 'fallback-icon text-3xl absolute inset-0 flex items-center justify-center';
+                  fallback.textContent = '🟠';
+                  target.parentElement?.appendChild(fallback);
+                }
+              }}
+            />
           </div>
           <span className="font-display text-2xl font-bold bg-gradient-to-r from-primary to-[hsl(var(--deep-red))] bg-clip-text text-transparent">
             Mithai Bhandar
