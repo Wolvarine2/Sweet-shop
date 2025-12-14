@@ -3,13 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.db.mongodb import init_db
 from app.api.v1.endpoints import auth, sweets, orders
 from app.services.websocket_manager import manager
+from app.core.config import settings
 
 app = FastAPI(title="Sweet Shop Realtime API")
 
-# Allow frontend to access
+# CORS configuration - Allow frontend to access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change to your frontend URL in production
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
