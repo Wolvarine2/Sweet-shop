@@ -3,28 +3,54 @@ import { Sweet } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useSweets } from '@/contexts/SweetsContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { ShoppingCart } from 'lucide-react';
+import { useCart } from '@/contexts/CartContext';
+import { ShoppingCart, Plus, Minus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface SweetCardProps {
   sweet: Sweet;
 }
 
 export function SweetCard({ sweet }: SweetCardProps) {
-  const { purchaseSweet } = useSweets();
   const { user } = useAuth();
-  const [isPurchasing, setIsPurchasing] = React.useState(false);
+  const { addToCart, cartItems, updateQuantity } = useCart();
+  const { toast } = useToast();
   const isOutOfStock = sweet.quantity <= 0;
+  
+  const cartItem = cartItems.find(item => item.sweet.id === sweet.id);
+  const inCart = cartItem !== undefined;
 
-  const handlePurchase = async () => {
-    setIsPurchasing(true);
-    try {
-      await purchaseSweet(sweet.id, 1);
-    } catch (error) {
-      console.error('Purchase error:', error);
-    } finally {
-      setIsPurchasing(false);
+  const handleAddToCart = () => {
+    if (isOutOfStock) {
+      toast({
+        title: 'Out of Stock',
+        description: 'This sweet is currently out of stock.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (inCart) {
+      if (cartItem.quantity < sweet.quantity) {
+        updateQuantity(sweet.id, cartItem.quantity + 1);
+        toast({
+          title: 'Updated Cart',
+          description: `Added one more ${sweet.name} to cart`,
+        });
+      } else {
+        toast({
+          title: 'Stock Limit',
+          description: `Cannot add more. Only ${sweet.quantity} available.`,
+          variant: 'destructive',
+        });
+      }
+    } else {
+      addToCart(sweet, 1);
+      toast({
+        title: 'Added to Cart! 🛒',
+        description: `${sweet.name} has been added to your cart`,
+      });
     }
   };
 
@@ -38,7 +64,7 @@ export function SweetCard({ sweet }: SweetCardProps) {
               <img 
                 src={sweet.imageUrl} 
                 alt={sweet.name}
-                className="w-24 h-24 md:w-28 md:h-28 object-cover rounded-lg border-2 border-border/50"
+                className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-lg border-2 border-border/50 shadow-md"
                 onError={(e) => {
                   // Fallback to emoji if image fails to load
                   const target = e.currentTarget;
@@ -83,15 +109,50 @@ export function SweetCard({ sweet }: SweetCardProps) {
         </div>
         
         {user && (
-          <Button
-            onClick={handlePurchase}
-            disabled={isOutOfStock || isPurchasing}
-            size="sm"
-            className="gap-2 shadow-md hover:shadow-lg transition-shadow"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            {isPurchasing ? 'Processing...' : isOutOfStock ? 'Sold Out' : 'Buy Now'}
-          </Button>
+          <div className="flex items-center gap-2">
+            {inCart ? (
+              <div className="flex items-center gap-2 border rounded-md">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => {
+                    if (cartItem.quantity > 1) {
+                      updateQuantity(sweet.id, cartItem.quantity - 1);
+                    } else {
+                      updateQuantity(sweet.id, 0);
+                    }
+                  }}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <span className="text-sm font-medium w-8 text-center">{cartItem.quantity}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => {
+                    if (cartItem.quantity < sweet.quantity) {
+                      updateQuantity(sweet.id, cartItem.quantity + 1);
+                    }
+                  }}
+                  disabled={cartItem.quantity >= sweet.quantity}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={handleAddToCart}
+                disabled={isOutOfStock}
+                size="sm"
+                className="gap-2 shadow-md hover:shadow-lg transition-shadow"
+              >
+                <ShoppingCart className="h-4 w-4" />
+                {isOutOfStock ? 'Sold Out' : 'Add to Cart'}
+              </Button>
+            )}
+          </div>
         )}
       </CardFooter>
     </Card>

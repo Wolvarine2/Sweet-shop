@@ -30,11 +30,8 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { categories, Sweet } from '@/data/mockData';
-import { ordersService, Order } from '@/services/ordersService';
-import { websocketService, WebSocketMessage } from '@/services/websocketService';
-import { Edit, Package, Plus, Trash2, ShoppingBag, Loader2, RefreshCw } from 'lucide-react';
+import { Edit, Package, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Admin() {
@@ -47,9 +44,6 @@ export default function Admin() {
   const [isRestockDialogOpen, setIsRestockDialogOpen] = useState(false);
   const [selectedSweet, setSelectedSweet] = useState<Sweet | null>(null);
   const [restockAmount, setRestockAmount] = useState(10);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
-  const [activeTab, setActiveTab] = useState('inventory');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -207,70 +201,6 @@ export default function Admin() {
 
   const emojiOptions = ['🍬', '🍫', '🍭', '🐻', '🪱', '🌿', '🧈', '🍪', '🧁', '🎂'];
 
-  const loadOrders = async () => {
-    setIsLoadingOrders(true);
-    try {
-      const allOrders = await ordersService.getAllOrders();
-      // Sort by date, most recent first
-      const sortedOrders = allOrders.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      setOrders(sortedOrders);
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to load orders.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoadingOrders(false);
-    }
-  };
-
-  // Fetch orders when order history tab is first opened
-  useEffect(() => {
-    if (activeTab === 'orders' && orders.length === 0 && !isLoadingOrders) {
-      loadOrders();
-    }
-  }, [activeTab]);
-
-  // Set up WebSocket for real-time order updates
-  useEffect(() => {
-    if (!isAdmin) return;
-
-    const handleNewOrder = (message: WebSocketMessage) => {
-      if (message.type === 'NEW_ORDER') {
-        const newOrder = message.data;
-        setOrders(prev => {
-          // Add new order at the beginning (most recent first)
-          const orderWithId = {
-            ...newOrder,
-            id: newOrder._id || newOrder.id,
-          };
-          return [orderWithId, ...prev];
-        });
-        toast({
-          title: 'New Order! 🎉',
-          description: `Order from ${newOrder.user_email} - ₹${newOrder.total_amount}`,
-        });
-      }
-    };
-
-    const disconnect = websocketService.connectAdmin(handleNewOrder);
-    return disconnect;
-  }, [isAdmin, toast]);
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -287,28 +217,14 @@ export default function Admin() {
           </div>
           
           <div className="flex gap-2">
-            {activeTab === 'inventory' && (
-              <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Sweet
-              </Button>
-            )}
-            {activeTab === 'orders' && (
-              <Button onClick={loadOrders} variant="outline" className="gap-2" disabled={isLoadingOrders}>
-                <RefreshCw className={`h-4 w-4 ${isLoadingOrders ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
-            )}
+            <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Sweet
+            </Button>
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="inventory">Inventory</TabsTrigger>
-            <TabsTrigger value="orders">Order History</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="inventory" className="mt-6">
+        <div className="mt-6">
             <div className="rounded-xl border bg-card">
               <Table>
                 <TableHeader>
@@ -390,74 +306,7 @@ export default function Admin() {
                 </TableBody>
               </Table>
             </div>
-          </TabsContent>
-
-          <TabsContent value="orders" className="mt-6">
-            <div className="rounded-xl border bg-card">
-              {isLoadingOrders ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : orders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground text-lg">No orders yet</p>
-                  <p className="text-muted-foreground text-sm mt-1">Orders will appear here when customers make purchases</p>
-                </div>
-              ) : (
-                <>
-                  <div className="p-4 border-b">
-                    <p className="text-sm text-muted-foreground">
-                      Total Orders: <span className="font-medium text-foreground">{orders.length}</span>
-                    </p>
-                  </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Order ID</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Items</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead>Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {orders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-mono text-xs">
-                            {order.id?.slice(-8) || 'N/A'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{order.user_email}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1 max-w-md">
-                              {order.items.map((item, idx) => (
-                                <div key={idx} className="text-sm">
-                                  <span className="font-medium">{item.sweet_name}</span>
-                                  <span className="text-muted-foreground"> × {item.quantity}</span>
-                                  <span className="text-muted-foreground ml-2">@ ₹{item.price_at_purchase}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-medium text-primary text-lg">
-                            ₹{order.total_amount.toFixed(2)}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {formatDate(order.created_at)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+        </div>
       </main>
 
       {/* Add Dialog */}

@@ -16,13 +16,13 @@ export const removeAuthToken = (): void => {
   localStorage.removeItem('sweetshop_token');
 };
 
-// API request helper
+// API request helper with session tracking
 export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const token = getAuthToken();
-
+  
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
@@ -37,6 +37,23 @@ export async function apiRequest<T>(
     headers,
   });
 
+  // Handle 401 Unauthorized - token expired or invalid
+  if (response.status === 401) {
+    // Clear invalid token and user data
+    removeAuthToken();
+    localStorage.removeItem('sweetshop_user');
+    
+    // Dispatch custom event for auth context to handle
+    window.dispatchEvent(new CustomEvent('auth:logout'));
+    
+    // Navigate to home page on session expiry
+    if (window.location.pathname !== '/') {
+      window.location.href = '/';
+    }
+    
+    throw new Error('Session expired. Please login again.');
+  }
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: response.statusText }));
     throw new Error(error.detail || `HTTP error! status: ${response.status}`);
@@ -47,7 +64,7 @@ export async function apiRequest<T>(
   if (contentType && contentType.includes('application/json')) {
     return response.json();
   }
-
+  
   return {} as T;
 }
 

@@ -1,80 +1,78 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Candy, LogOut, Settings, User } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Candy, LogOut, Settings, ShoppingBag } from 'lucide-react';
+import { CartSidebar } from '@/components/cart/CartSidebar';
 
 export function Header() {
   const { user, logout, isAdmin } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+    <header className="sticky top-0 z-50 w-full border-b-2 border-primary/20 bg-gradient-to-r from-background via-[hsl(var(--cream))] to-background shadow-md">
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-2xl">
+        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity group">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-indian text-2xl shadow-lg group-hover:scale-110 transition-transform">
             🍬
           </div>
-          <span className="font-display text-2xl font-bold text-primary">
-            Sweet Shop
+          <span className="font-display text-2xl font-bold bg-gradient-to-r from-primary to-[hsl(var(--deep-red))] bg-clip-text text-transparent">
+            Mithai Bhandar
           </span>
         </Link>
 
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-3">
           {user ? (
             <>
               <Link to="/dashboard">
-                <Button variant="ghost" className="font-medium">
+                <Button variant="default" className="font-medium shadow-md hover:shadow-lg transition-all hover:scale-105 bg-gradient-to-r from-primary to-[hsl(var(--warm-orange))] border-0">
                   <Candy className="mr-2 h-4 w-4" />
                   Browse Sweets
                 </Button>
               </Link>
 
+              <Link to="/orders">
+                <Button variant="default" className="font-medium shadow-md hover:shadow-lg transition-all hover:scale-105 bg-gradient-to-r from-secondary to-gold border-0 text-foreground">
+                  <ShoppingBag className="mr-2 h-4 w-4" />
+                  My Orders
+                </Button>
+              </Link>
+
+              <div className="[&_button]:shadow-md [&_button]:hover:shadow-lg [&_button]:transition-all [&_button]:hover:scale-105">
+                <CartSidebar />
+              </div>
+
               {isAdmin && (
                 <Link to="/admin">
-                  <Button variant="ghost" className="font-medium">
+                  <Button variant="default" className="font-medium shadow-md hover:shadow-lg transition-all hover:scale-105 bg-gradient-to-r from-accent to-[hsl(var(--deep-red))] border-0">
                     <Settings className="mr-2 h-4 w-4" />
                     Admin
                   </Button>
                 </Link>
               )}
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <User className="h-4 w-4" />
-                    {user.name}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-popover">
-                  <DropdownMenuItem disabled className="text-muted-foreground">
-                    {user.email}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled>
-                    Role: {user.role}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="text-destructive">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button 
+                variant="outline" 
+                onClick={handleLogout}
+                className="gap-2 shadow-md hover:shadow-lg transition-all hover:scale-105 border-2 border-primary/30 bg-background/80 backdrop-blur-sm"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
             </>
           ) : (
             <>
               <Link to="/login">
-                <Button variant="ghost" className="font-medium">
+                <Button variant="outline" className="font-medium shadow-md hover:shadow-lg transition-all hover:scale-105 border-2 border-primary/30">
                   Login
                 </Button>
               </Link>
               <Link to="/register">
-                <Button className="font-medium">
+                <Button className="font-medium shadow-md hover:shadow-lg transition-all hover:scale-105 bg-gradient-to-r from-primary to-warm-orange border-0">
                   Sign Up
                 </Button>
               </Link>

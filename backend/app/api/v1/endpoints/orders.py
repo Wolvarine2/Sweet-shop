@@ -61,3 +61,15 @@ async def create_order(request: PurchaseRequest, user: User = Depends(get_curren
     
     return order
 
+@router.get("/my-history")
+async def get_my_orders(user: User = Depends(get_current_user)):
+    """Get orders for the current user"""
+    orders = await Order.find(Order.user_id == user.id).to_list()
+    return orders
+
+@router.get("/all")
+async def get_all_orders(admin: User = Depends(get_current_admin)):
+    """Get all orders (admin only)"""
+    orders = await Order.find_all().to_list()
+    return orders
+

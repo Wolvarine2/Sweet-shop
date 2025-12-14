@@ -42,6 +42,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  // Listen for logout events (e.g., when session expires)
+  useEffect(() => {
+    const handleLogout = () => {
+      setUser(null);
+      localStorage.removeItem('sweetshop_user');
+      // Navigate to home page on session expiry
+      if (window.location.pathname !== '/') {
+        window.location.href = '/';
+      }
+    };
+
+    window.addEventListener('auth:logout', handleLogout);
+    return () => window.removeEventListener('auth:logout', handleLogout);
+  }, []);
+
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const response = await authService.login(email, password);
@@ -66,14 +81,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authService.register(email, password, 'user');
       
       // After registration, automatically log in
-      const loginSuccess = await login(email, password);
-      if (loginSuccess && user) {
-        // Update user with name
-        const updatedUser = { ...user, name };
-        setUser(updatedUser);
-        localStorage.setItem('sweetshop_user', JSON.stringify(updatedUser));
-      }
-      return loginSuccess;
+      const response = await authService.login(email, password);
+      
+      const newUser: User = {
+        id: email,
+        email: response.email,
+        role: response.role as 'user' | 'admin',
+        name: name, // Set the name from registration
+      };
+      
+      setUser(newUser);
+      localStorage.setItem('sweetshop_user', JSON.stringify(newUser));
+      return true;
     } catch (error) {
       console.error('Registration error:', error);
       return false;
