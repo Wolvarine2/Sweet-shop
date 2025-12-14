@@ -145,10 +145,21 @@ export default function Index() {
           </p>
           
           <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6">
-            {['Laddu', 'Barfi', 'Halwa', 'Milk Sweets', 'Dry Sweets', 'Traditional'].map((category) => (
-              <div key={category} className="group rounded-xl bg-card p-6 text-center shadow-md border border-border hover:border-primary/30 transition-all hover:scale-105 hover:shadow-lg cursor-pointer">
-                <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">🍬</div>
-                <h3 className="font-display font-semibold text-foreground">{category}</h3>
+            {[
+              { name: 'Laddu', color: 'from-orange-400 to-orange-600' },
+              { name: 'Barfi', color: 'from-yellow-300 to-yellow-500' },
+              { name: 'Halwa', color: 'from-orange-300 to-orange-500' },
+              { name: 'Milk Sweets', color: 'from-white to-yellow-100' },
+              { name: 'Dry Sweets', color: 'from-amber-300 to-amber-500' },
+              { name: 'Traditional', color: 'from-red-400 to-red-600' }
+            ].map((category) => (
+              <div key={category.name} className="group rounded-xl bg-card p-6 text-center shadow-md border border-border hover:border-primary/30 transition-all hover:scale-105 hover:shadow-lg cursor-pointer">
+                <div className="w-16 h-16 mx-auto mb-3 rounded-full overflow-hidden group-hover:scale-110 transition-transform bg-gradient-to-br shadow-lg relative">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${category.color}`}></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
+                  <div className="absolute inset-2 rounded-full bg-white/20 backdrop-blur-sm"></div>
+                </div>
+                <h3 className="font-display font-semibold text-foreground">{category.name}</h3>
               </div>
             ))}
           </div>

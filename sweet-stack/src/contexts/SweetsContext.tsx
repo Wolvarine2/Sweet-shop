@@ -106,7 +106,6 @@ export function SweetsProvider({ children }: { children: ReactNode }) {
         category: sweet.category,
         price: sweet.price,
         quantity: sweet.quantity,
-        description: sweet.description,
         image_url: sweet.imageUrl || sweet.image || 'https://placehold.co/200x200?text=Sweet',
       };
 
@@ -118,9 +117,20 @@ export function SweetsProvider({ children }: { children: ReactNode }) {
         description: `${sweet.name} has been added to the inventory.`,
       });
     } catch (error: any) {
+      let errorMessage = 'Failed to add sweet.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.detail) {
+        errorMessage = typeof error.detail === 'string' ? error.detail : JSON.stringify(error.detail);
+      }
+      
       toast({
         title: 'Error',
-        description: error.message || 'Failed to add sweet.',
+        description: errorMessage,
         variant: 'destructive',
       });
       throw error;
@@ -134,9 +144,8 @@ export function SweetsProvider({ children }: { children: ReactNode }) {
       if (updates.category) updateData.category = updates.category;
       if (updates.price !== undefined) updateData.price = updates.price;
       if (updates.quantity !== undefined) updateData.quantity = updates.quantity;
-      if (updates.description) updateData.description = updates.description;
-      if (updates.imageUrl) {
-        updateData.image_url = updates.imageUrl;
+      if (updates.imageUrl !== undefined) {
+        updateData.image_url = updates.imageUrl || 'https://placehold.co/200x200?text=Sweet';
       } else if (updates.image) {
         updateData.image_url = updates.image;
       }
@@ -149,9 +158,20 @@ export function SweetsProvider({ children }: { children: ReactNode }) {
         description: 'The sweet has been updated successfully.',
       });
     } catch (error: any) {
+      let errorMessage = 'Failed to update sweet.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.detail) {
+        errorMessage = typeof error.detail === 'string' ? error.detail : JSON.stringify(error.detail);
+      }
+      
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update sweet.',
+        description: errorMessage,
         variant: 'destructive',
       });
       throw error;

@@ -112,18 +112,73 @@ export default function Admin() {
 
   const handleAdd = async () => {
     try {
-      let finalImageUrl = formData.imageUrl;
+      // Validate required fields
+      if (!formData.name || !formData.name.trim()) {
+        toast({
+          title: 'Validation Error',
+          description: 'Please enter a sweet name.',
+          variant: 'destructive',
+        });
+        return;
+      }
       
-      // If file is uploaded, convert to base64 data URL
+      if (!formData.category) {
+        toast({
+          title: 'Validation Error',
+          description: 'Please select a category.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      const price = parseFloat(formData.price);
+      if (isNaN(price) || price <= 0) {
+        toast({
+          title: 'Validation Error',
+          description: 'Please enter a valid price greater than 0.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      const quantity = parseInt(formData.quantity);
+      if (isNaN(quantity) || quantity < 0) {
+        toast({
+          title: 'Validation Error',
+          description: 'Please enter a valid quantity (0 or greater).',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      let finalImageUrl = formData.imageUrl?.trim() || '';
+      
+      // If file is uploaded, convert to base64 data URL (takes priority)
       if (formData.imageFile) {
         finalImageUrl = await convertImageToDataUrl(formData.imageFile);
       }
+      // If URL is provided, use it (but validate it's not empty after trim)
+      else if (finalImageUrl) {
+        // URL is already set, just ensure it's valid
+        if (!finalImageUrl.startsWith('http://') && !finalImageUrl.startsWith('https://') && !finalImageUrl.startsWith('data:image/')) {
+          toast({
+            title: 'Invalid Image URL',
+            description: 'Please enter a valid image URL (http://, https://) or base64 data URL (data:image/...)',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+      // If no image provided, use default placeholder
+      else {
+        finalImageUrl = 'https://placehold.co/200x200?text=Sweet';
+      }
       
       await addSweet({
-        name: formData.name,
+        name: formData.name.trim(),
         category: formData.category,
-        price: parseFloat(formData.price),
-        quantity: parseInt(formData.quantity),
+        price: price,
+        quantity: quantity,
         description: formData.description,
         image: formData.image,
         imageUrl: finalImageUrl,
@@ -198,8 +253,6 @@ export default function Admin() {
       }
     }
   };
-
-  const emojiOptions = ['🍬', '🍫', '🍭', '🐻', '🪱', '🌿', '🧈', '🍪', '🧁', '🎂'];
 
   return (
     <div className="min-h-screen bg-background">
@@ -316,23 +369,6 @@ export default function Admin() {
             <DialogTitle className="font-display text-xl">Add New Sweet</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3 py-2">
-            <div className="grid gap-1.5">
-              <Label className="text-sm">Icon</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {emojiOptions.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, image: emoji })}
-                    className={`text-xl p-1.5 rounded-md border-2 transition-colors ${
-                      formData.image === emoji ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-muted'
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
                 <Label htmlFor="name" className="text-sm">Name</Label>
@@ -413,25 +449,55 @@ export default function Admin() {
                 <div className="text-xs text-muted-foreground">OR</div>
                 <Input
                   id="imageUrl"
-                  type="url"
+                  type="text"
                   placeholder="https://example.com/image.jpg or data:image/..."
                   value={formData.imageUrl}
                   onChange={(e) => {
-                    setFormData({ ...formData, imageUrl: e.target.value, imageFile: null, imagePreview: e.target.value || null });
+                    const url = e.target.value;
+                    setFormData({ 
+                      ...formData, 
+                      imageUrl: url, 
+                      imageFile: null, 
+                      imagePreview: url.trim() ? url : null 
+                    });
+                    // Clear file input when URL is entered
+                    const fileInput = document.getElementById('imageFile') as HTMLInputElement;
+                    if (fileInput) fileInput.value = '';
+                  }}
+                  onBlur={(e) => {
+                    // Validate URL format when user leaves the field
+                    const url = e.target.value.trim();
+                    if (url && !url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('data:image/')) {
+                      toast({
+                        title: 'Invalid URL',
+                        description: 'Please enter a valid image URL (http://, https://) or base64 data URL (data:image/...)',
+                        variant: 'destructive',
+                      });
+                    }
                   }}
                   className="h-9"
                 />
               </div>
               {formData.imagePreview && (
                 <div className="mt-2">
-                  <img 
-                    src={formData.imagePreview} 
-                    alt="Preview" 
-                    className="w-20 h-20 object-cover rounded-md border"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
+                  <div className="relative">
+                    <img 
+                      src={formData.imagePreview} 
+                      alt="Preview" 
+                      className="w-20 h-20 object-cover rounded-md border"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        target.style.display = 'none';
+                        const errorMsg = target.nextElementSibling as HTMLElement;
+                        if (errorMsg) errorMsg.style.display = 'block';
+                      }}
+                      onLoad={(e) => {
+                        const errorMsg = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (errorMsg) errorMsg.style.display = 'none';
+                      }}
+                    />
+                    <div className="hidden text-xs text-destructive mt-1">Failed to load image. Please check the URL.</div>
+                  </div>
                 </div>
               )}
             </div>
@@ -459,23 +525,6 @@ export default function Admin() {
             <DialogTitle className="font-display text-xl">Edit Sweet</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3 py-2">
-            <div className="grid gap-1.5">
-              <Label className="text-sm">Icon</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {emojiOptions.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, image: emoji })}
-                    className={`text-xl p-1.5 rounded-md border-2 transition-colors ${
-                      formData.image === emoji ? 'border-primary bg-primary/10' : 'border-transparent hover:bg-muted'
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
                 <Label htmlFor="edit-name" className="text-sm">Name</Label>
@@ -553,33 +602,63 @@ export default function Admin() {
                     Clear
                   </Button>
                 </div>
-                <div className="text-xs text-muted-foreground">OR</div>
-                <Input
-                  id="edit-imageUrl"
-                  type="url"
-                  placeholder="https://example.com/image.jpg or data:image/..."
-                  value={formData.imageUrl}
-                  onChange={(e) => {
-                    setFormData({ ...formData, imageUrl: e.target.value, imageFile: null, imagePreview: e.target.value || null });
-                  }}
-                  className="h-9"
-                />
-              </div>
-              {formData.imagePreview && (
-                <div className="mt-2">
-                  <img 
-                    src={formData.imagePreview} 
-                    alt="Preview" 
-                    className="w-20 h-20 object-cover rounded-md border"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
+                    <div className="text-xs text-muted-foreground">OR</div>
+                    <Input
+                      id="edit-imageUrl"
+                      type="text"
+                      placeholder="https://example.com/image.jpg or data:image/..."
+                      value={formData.imageUrl}
+                      onChange={(e) => {
+                        const url = e.target.value;
+                        setFormData({ 
+                          ...formData, 
+                          imageUrl: url, 
+                          imageFile: null, 
+                          imagePreview: url.trim() ? url : null 
+                        });
+                        // Clear file input when URL is entered
+                        const fileInput = document.getElementById('edit-imageFile') as HTMLInputElement;
+                        if (fileInput) fileInput.value = '';
+                      }}
+                      onBlur={(e) => {
+                        // Validate URL format when user leaves the field
+                        const url = e.target.value.trim();
+                        if (url && !url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('data:image/')) {
+                          toast({
+                            title: 'Invalid URL',
+                            description: 'Please enter a valid image URL (http://, https://) or base64 data URL (data:image/...)',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                      className="h-9"
+                    />
+                  </div>
+                  {formData.imagePreview && (
+                    <div className="mt-2">
+                      <div className="relative">
+                        <img 
+                          src={formData.imagePreview} 
+                          alt="Preview" 
+                          className="w-20 h-20 object-cover rounded-md border"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const errorMsg = target.nextElementSibling as HTMLElement;
+                            if (errorMsg) errorMsg.style.display = 'block';
+                          }}
+                          onLoad={(e) => {
+                            const errorMsg = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (errorMsg) errorMsg.style.display = 'none';
+                          }}
+                        />
+                        <div className="hidden text-xs text-destructive mt-1">Failed to load image. Please check the URL.</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="edit-description" className="text-sm">Description</Label>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="edit-description" className="text-sm">Description</Label>
               <Textarea
                 id="edit-description"
                 value={formData.description}

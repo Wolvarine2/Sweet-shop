@@ -55,8 +55,42 @@ export async function apiRequest<T>(
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: response.statusText }));
-    throw new Error(error.detail || `HTTP error! status: ${response.status}`);
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const errorData = await response.json();
+      // Handle FastAPI validation errors (array format)
+      if (Array.isArray(errorData.detail)) {
+        const validationErrors = errorData.detail.map((err: any) => {
+          const field = err.loc ? err.loc.slice(1).join('.') : 'field';
+          return `${field}: ${err.msg}`;
+        }).join(', ');
+        errorMessage = `Validation error: ${validationErrors}`;
+      }
+      // Handle standard error detail (string)
+      else if (errorData.detail) {
+        errorMessage = typeof errorData.detail === 'string' 
+          ? errorData.detail 
+          : JSON.stringify(errorData.detail);
+      } 
+      // Handle message field
+      else if (errorData.message) {
+        errorMessage = typeof errorData.message === 'string'
+          ? errorData.message
+          : JSON.stringify(errorData.message);
+      } 
+      // Handle string response
+      else if (typeof errorData === 'string') {
+        errorMessage = errorData;
+      } 
+      // Fallback to stringify
+      else {
+        errorMessage = JSON.stringify(errorData);
+      }
+    } catch {
+      // If JSON parsing fails, use status text
+      errorMessage = response.statusText || `HTTP error! status: ${response.status}`;
+    }
+    throw new Error(errorMessage);
   }
 
   // Handle empty responses
