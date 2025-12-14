@@ -104,7 +104,16 @@ export async function apiRequest<T>(
 
 // WebSocket URL helper
 export const getWebSocketUrl = (channel: 'stock' | 'admin'): string => {
-  const wsBaseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+  // Get WebSocket URL from env, or derive from API URL
+  let wsBaseUrl = import.meta.env.VITE_WS_URL;
+  
+  if (!wsBaseUrl) {
+    // If no WS URL specified, derive from API URL
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    // Convert http:// to ws:// and https:// to wss://
+    wsBaseUrl = apiUrl.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');
+  }
+  
   return `${wsBaseUrl}/ws/${channel}`;
 };
 

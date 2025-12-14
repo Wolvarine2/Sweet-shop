@@ -26,12 +26,21 @@ npm run build
 
 ## Environment Variables
 
-Create a `.env` file:
+Create a `.env` file in the `sweet-stack` directory:
 
+### For Production (Render Backend):
+```env
+VITE_API_URL=https://sweet-shop-ieek.onrender.com
+VITE_WS_URL=wss://sweet-shop-ieek.onrender.com
+```
+
+### For Local Development:
 ```env
 VITE_API_URL=http://localhost:8000
 VITE_WS_URL=ws://localhost:8000
 ```
+
+**Note:** If `VITE_WS_URL` is not provided, it will automatically be derived from `VITE_API_URL` (converting `https://` to `wss://` and `http://` to `ws://`).
 
 ## Project Structure
 
